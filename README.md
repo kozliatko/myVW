@@ -80,6 +80,16 @@ async with MyVWClient(username, password, transport=transport) as client:
     ...
 ```
 
+TLS certificate verification is **on by default**. It can be turned off explicitly if you
+hit a certificate problem in your own network (e.g. a corporate MITM proxy) — see
+[Caveats](#caveats) before doing so, since it removes protection against
+man-in-the-middle attacks:
+
+```python
+async with MyVWClient(username, password, verify=False) as client:
+    ...
+```
+
 A failed login raises `myvw.LoginError`. Any other unexpected portal response (e.g. a
 missing vehicle list) raises `RuntimeError`.
 
@@ -198,10 +208,16 @@ HTML login-form parser, and the CLI's formatting and entry-point logic.
 - **Unofficial client.** The portal has no public/supported API. Endpoints, form
   structure, and JSON response shapes can change at any time; this client may break
   without warning when they do.
-- **TLS verification is disabled** (`verify=False`) in the HTTP client, to work around
-  known certificate issues on the portal side from some networks. Review this setting
-  for your own environment/threat model before relying on it — disabling TLS
-  verification removes protection against man-in-the-middle attacks.
+- **TLS certificate verification is enabled by default** (`verify=True`). It was
+  previously hardcoded to `False`, allegedly to work around portal-side certificate
+  issues; that claim was tested end-to-end against the live portal (full login +
+  `get_vehicles()` flow, both `www.myvolkswagen.net` and `identity.vwgroup.io`) with
+  verification on, and no certificate problem was found — both hosts present valid,
+  publicly-trusted certificates. `verify=False` is still available as an explicit
+  opt-out (`MyVWClient(..., verify=False)`) for edge cases like a corporate MITM proxy,
+  but using it removes protection against man-in-the-middle attacks, including exposure
+  of your plaintext myvolkswagen.net credentials — only disable it if you understand
+  and accept that risk for your specific network.
 - Credentials are read from environment variables (or a local `.env` file via the CLI).
   Never commit a populated `.env` — see `.env.example` for the expected shape.
 

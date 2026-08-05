@@ -7,6 +7,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- **`MyVWClient` now verifies TLS certificates by default** (`verify=True`).
+  Previously `verify=False` was hardcoded in `start()`, disabling certificate
+  verification unconditionally on every request (initial login, the identity-server
+  POST, and every `authproxy` API call), justified by a code comment claiming
+  portal-side certificate issues. That claim was tested end-to-end against the live
+  portal — full `login()` + `get_vehicles()` flow against both
+  `www.myvolkswagen.net` and `identity.vwgroup.io` with verification enabled — and
+  completed successfully; both hosts present valid, publicly-trusted certificates
+  (DigiCert and Amazon RSA respectively). No functional reason for disabling
+  verification was found, while it did expose plaintext credentials to any
+  on-path attacker. `verify=False` remains available as an explicit,
+  caller-opted-in constructor argument for edge cases (e.g. a corporate MITM
+  proxy) — see the Caveats section in the README.
+
 ## [0.2.0] - 2026-08-05
 
 ### Changed

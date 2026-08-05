@@ -50,6 +50,45 @@ def _successful_login_handler(request: httpx.Request) -> httpx.Response:
     raise AssertionError(f"Unexpected request: {request.method} {url}")
 
 
+# -- start() / TLS verification -----------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_start_verifies_tls_by_default(monkeypatch):
+    captured = {}
+
+    class _RecordingAsyncClient(httpx.AsyncClient):
+        def __init__(self, *args, **kwargs):
+            captured.update(kwargs)
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", _RecordingAsyncClient)
+
+    client = MyVWClient("user@example.com", "secret")
+    await client.start()
+    await client.close()
+
+    assert captured["verify"] is True
+
+
+@pytest.mark.asyncio
+async def test_start_allows_disabling_tls_verification_explicitly(monkeypatch):
+    captured = {}
+
+    class _RecordingAsyncClient(httpx.AsyncClient):
+        def __init__(self, *args, **kwargs):
+            captured.update(kwargs)
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", _RecordingAsyncClient)
+
+    client = MyVWClient("user@example.com", "secret", verify=False)
+    await client.start()
+    await client.close()
+
+    assert captured["verify"] is False
+
+
 @pytest.mark.asyncio
 async def test_login_success_sets_session_cookie():
     transport = httpx.MockTransport(_successful_login_handler)

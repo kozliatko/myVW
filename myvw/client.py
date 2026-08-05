@@ -191,11 +191,13 @@ class MyVWClient:
         *,
         proxy: str | None = None,
         transport: httpx.BaseTransport | None = None,
+        verify: bool = True,
     ) -> None:
         self._username = username
         self._password = password
         self._proxy = proxy
         self._transport = transport
+        self._verify = verify
         self._http: httpx.AsyncClient | None = None
 
     # -- Lifecycle -----------------------------------------------------------
@@ -204,7 +206,7 @@ class MyVWClient:
         """Creates the HTTP session."""
         kwargs: dict[str, Any] = {
             "follow_redirects": True,
-            "verify": False,
+            "verify": self._verify,
             "headers": _BROWSER_HDR,
             "timeout": 30.0,
         }
