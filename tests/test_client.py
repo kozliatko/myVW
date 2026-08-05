@@ -66,7 +66,7 @@ async def test_login_raises_when_login_url_does_not_redirect_to_identity():
 
     transport = httpx.MockTransport(handler)
     async with MyVWClient("user@example.com", "secret", transport=transport) as client:
-        with pytest.raises(LoginError, match="Neočakávaná URL"):
+        with pytest.raises(LoginError, match="Unexpected URL"):
             await client.login()
 
 
@@ -106,7 +106,7 @@ async def test_login_raises_when_credentials_are_rejected():
 
     transport = httpx.MockTransport(handler)
     async with MyVWClient("user@example.com", "wrong", transport=transport) as client:
-        with pytest.raises(LoginError, match="Prihlásenie zlyhalo"):
+        with pytest.raises(LoginError, match="Login failed"):
             await client.login()
 
 
@@ -188,7 +188,7 @@ async def test_get_relations_raises_when_response_has_no_relations_key():
 
     transport = httpx.MockTransport(handler)
     async with MyVWClient("user@example.com", "secret", transport=transport) as client:
-        with pytest.raises(RuntimeError, match="Nepodarilo sa získať zoznam vozidiel"):
+        with pytest.raises(RuntimeError, match="Failed to fetch the vehicle list"):
             await client._get_relations()
 
 
@@ -248,14 +248,14 @@ async def test_fetch_vehicle_assembles_full_vehicle_from_endpoints():
         vehicle = await client._fetch_vehicle(
             {
                 "vehicle": {"vin": "VIN123"},
-                "vehicleNickname": "Golfík",
+                "vehicleNickname": "MyCar",
                 "licensePlate": "BA123XY",
                 "role": "OWNER",
             }
         )
 
     assert vehicle.vin == "VIN123"
-    assert vehicle.nickname == "Golfík"
+    assert vehicle.nickname == "MyCar"
     assert vehicle.license_plate == "BA123XY"
     assert vehicle.role == "OWNER"
     assert vehicle.model_name == "Golf"

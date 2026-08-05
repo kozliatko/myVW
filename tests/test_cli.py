@@ -33,19 +33,19 @@ def test_fmt_trip_with_only_distance():
 
 def test_fmt_maint_returns_none_when_both_values_missing():
     m = Maintenance()
-    assert cli._fmt_maint(m, "STK za:", "inspection_due_days", "inspection_due_km") is None
+    assert cli._fmt_maint(m, "Inspection due:", "inspection_due_days", "inspection_due_km") is None
 
 
 def test_fmt_maint_formats_days_and_km():
     m = Maintenance(inspection_due_days=100, inspection_due_km=5000)
-    line = cli._fmt_maint(m, "STK za:", "inspection_due_days", "inspection_due_km")
-    assert line == "  STK za:       100 dní / 5 000 km"
+    line = cli._fmt_maint(m, "Inspection due:", "inspection_due_days", "inspection_due_km")
+    assert line == "  Inspection due:   100 days / 5 000 km"
 
 
 def test_fmt_maint_formats_days_only():
     m = Maintenance(oil_due_days=30)
-    line = cli._fmt_maint(m, "Olej za:", "oil_due_days", "oil_due_km")
-    assert line == "  Olej za:      30 dní"
+    line = cli._fmt_maint(m, "Oil service due:", "oil_due_days", "oil_due_km")
+    assert line == "  Oil service due:  30 days"
 
 
 # -- print_vehicle / print_report -----------------------------------------------
@@ -54,7 +54,7 @@ def test_fmt_maint_formats_days_only():
 def test_print_vehicle_outputs_key_fields(capsys):
     v = Vehicle(
         vin="VIN123",
-        nickname="Golfík",
+        nickname="MyCar",
         license_plate="BA123XY",
         role="OWNER",
         model_name="Golf",
@@ -68,7 +68,7 @@ def test_print_vehicle_outputs_key_fields(capsys):
     out = capsys.readouterr().out
 
     assert "VIN123" in out
-    assert "Golfík" in out and "BA123XY" in out
+    assert "MyCar" in out and "BA123XY" in out
     assert "Golf" in out
     assert "1.5 TSI" in out
     assert "42 000 km" in out
@@ -79,14 +79,14 @@ def test_print_vehicle_shows_no_lights_message_when_empty(capsys):
     v = Vehicle(vin="VIN123")
     cli.print_vehicle(v)
     out = capsys.readouterr().out
-    assert "žiadne" in out
+    assert "none" in out
 
 
 def test_print_report_shows_count_and_all_vehicles(capsys):
     vehicles = [Vehicle(vin="VIN1"), Vehicle(vin="VIN2")]
     cli.print_report(vehicles)
     out = capsys.readouterr().out
-    assert "Nájdených vozidiel: 2" in out
+    assert "Vehicles found: 2" in out
     assert "VIN1" in out
     assert "VIN2" in out
 
@@ -168,15 +168,18 @@ async def test_run_passes_proxy_through_to_client(monkeypatch):
 
 
 def test_main_returns_1_when_credentials_missing(monkeypatch, capsys):
+    # Prevent main() from picking up credentials from a real .env file on disk.
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **kw: False)
     monkeypatch.delenv("VW_USERNAME", raising=False)
     monkeypatch.delenv("VW_PASSWORD", raising=False)
     monkeypatch.setattr("sys.argv", ["myvw"])
 
     assert cli.main() == 1
-    assert "VW_USERNAME a VW_PASSWORD" in capsys.readouterr().out
+    assert "VW_USERNAME and VW_PASSWORD" in capsys.readouterr().out
 
 
 def test_main_invokes_run_with_env_credentials(monkeypatch):
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **kw: False)
     monkeypatch.setenv("VW_USERNAME", "user@example.com")
     monkeypatch.setenv("VW_PASSWORD", "secret")
     monkeypatch.setattr("sys.argv", ["myvw", "--proxy", "socks5://localhost:8080"])

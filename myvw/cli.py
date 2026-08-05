@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-CLI — vypíše stav vozidiel z myVolkswagen portálu.
+CLI — prints vehicle status from the myVolkswagen portal.
 
-Použitie:
+Usage:
     myvw
     myvw --proxy socks5://localhost:8080
     python -m myvw
@@ -34,47 +34,47 @@ def _fmt_maint(m: Maintenance, label: str, days_key: str, km_key: str) -> str | 
         return None
     parts = []
     if days is not None:
-        parts.append(f"{days} dní")
+        parts.append(f"{days} days")
     if km is not None:
         parts.append(f"{km:,} km".replace(",", " "))
-    return f"  {label:<14}{' / '.join(parts)}"
+    return f"  {label:<18}{' / '.join(parts)}"
 
 
 def print_vehicle(v: Vehicle) -> None:
     sep = "=" * 56
     print(sep)
-    print(f"  VIN:          {v.vin}")
+    print(f"  {'VIN:':<18}{v.vin}")
     if v.nickname or v.license_plate:
-        print(f"  Vozidlo:      {v.nickname}  ({v.license_plate})  [{v.role}]")
+        print(f"  {'Vehicle:':<18}{v.nickname}  ({v.license_plate})  [{v.role}]")
     if v.model_name:
-        print(f"  Model:        {v.model_name}")
+        print(f"  {'Model:':<18}{v.model_name}")
     if v.engine:
-        print(f"  Motor:        {v.engine}")
+        print(f"  {'Engine:':<18}{v.engine}")
     if v.mileage_km is not None:
         km = f"{v.mileage_km:,}".replace(",", " ")
-        ts = f"  (k {v.data_timestamp})" if v.data_timestamp else ""
-        print(f"  Tachometer:   {km} km{ts}")
+        ts = f"  (as of {v.data_timestamp})" if v.data_timestamp else ""
+        print(f"  {'Odometer:':<18}{km} km{ts}")
 
     m = v.maintenance
     for line in filter(None, [
-        _fmt_maint(m, "STK za:",       "inspection_due_days", "inspection_due_km"),
-        _fmt_maint(m, "Olej za:",      "oil_due_days",        "oil_due_km"),
+        _fmt_maint(m, "Inspection due:", "inspection_due_days", "inspection_due_km"),
+        _fmt_maint(m, "Oil service due:", "oil_due_days",        "oil_due_km"),
     ]):
         print(line)
 
     lights = v.warning_lights
-    print(f"  Kontrolky:    {'žiadne' if not lights else ', '.join(str(l) for l in lights)}")
+    print(f"  {'Warning lights:':<18}{'none' if not lights else ', '.join(str(l) for l in lights)}")
 
     if v.short_trip:
-        print(f"  Krátka jazda: {_fmt_trip(v.short_trip)}")
+        print(f"  {'Short trip:':<18}{_fmt_trip(v.short_trip)}")
     if v.long_trip:
-        print(f"  Dlhá jazda:   {_fmt_trip(v.long_trip)}")
+        print(f"  {'Long trip:':<18}{_fmt_trip(v.long_trip)}")
     if v.cyclic_trip:
-        print(f"  Cyklická:     {_fmt_trip(v.cyclic_trip)}")
+        print(f"  {'Cyclic trip:':<18}{_fmt_trip(v.cyclic_trip)}")
 
 
 def print_report(vehicles: list[Vehicle]) -> None:
-    print(f"\nNájdených vozidiel: {len(vehicles)}\n")
+    print(f"\nVehicles found: {len(vehicles)}\n")
     for v in vehicles:
         print_vehicle(v)
     print("=" * 56)
@@ -82,11 +82,11 @@ def print_report(vehicles: list[Vehicle]) -> None:
 
 async def _run(username: str, password: str, proxy: str | None) -> int:
     async with MyVWClient(username, password, proxy=proxy) as client:
-        print("# Prihlasujem sa do myVolkswagen...")
+        print("# Logging in to myVolkswagen...")
         try:
             vehicles = await client.get_vehicles()
         except (LoginError, RuntimeError) as e:
-            print(f"Chyba: {e}")
+            print(f"Error: {e}")
             return 1
 
     print_report(vehicles)
@@ -94,8 +94,8 @@ async def _run(username: str, password: str, proxy: str | None) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Dáta vozidiel z myVolkswagen")
-    parser.add_argument("--proxy", metavar="URL", help="napr. socks5://localhost:8080")
+    parser = argparse.ArgumentParser(description="Vehicle data from myVolkswagen")
+    parser.add_argument("--proxy", metavar="URL", help="e.g. socks5://localhost:8080")
     args = parser.parse_args()
 
     try:
@@ -107,7 +107,7 @@ def main() -> int:
     username = os.environ.get("VW_USERNAME") or ""
     password = os.environ.get("VW_PASSWORD") or ""
     if not username or not password:
-        print("Chyba: VW_USERNAME a VW_PASSWORD musia byť nastavené v .env súbore alebo prostredí.")
+        print("Error: VW_USERNAME and VW_PASSWORD must be set in a .env file or in the environment.")
         return 1
 
     return asyncio.run(_run(username, password, args.proxy))

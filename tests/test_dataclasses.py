@@ -54,7 +54,7 @@ def test_vehicle_accepts_full_data():
     trip = Trip(trip_type="short", distance_km=12)
     v = Vehicle(
         vin="VIN123",
-        nickname="Golfík",
+        nickname="MyCar",
         license_plate="BA123XY",
         role="OWNER",
         model_name="Golf",

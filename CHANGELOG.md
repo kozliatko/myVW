@@ -7,6 +7,23 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-05
+
+### Changed
+
+- Translated all library-facing text to English: docstrings and comments in
+  `myvw/client.py`, CLI output labels and messages in `myvw/cli.py`
+  (`Vehicles found:`, `Warning lights:`, `Inspection due:`, `Oil service due:`,
+  `Short/Long/Cyclic trip:`, error messages, etc.), and the `pyproject.toml`
+  description. No Slovak strings remain in the codebase. Portal protocol
+  parameters (the `sk-SK` locale and `/sk/sk/` redirect path used to talk to
+  myvolkswagen.net) are intentionally left unchanged, since they affect what
+  the third-party API returns rather than being text authored by this library.
+- Fixed a test-isolation bug where `test_main_returns_1_when_credentials_missing`
+  could silently read a real local `.env` file via `dotenv.load_dotenv()` and
+  perform a live login against the portal; the CLI tests now stub out
+  `dotenv.load_dotenv` so the suite never depends on what's on disk.
+
 ### Added
 
 - Test suite (`pytest` + `pytest-asyncio`) covering the login flow, HTML login-form
@@ -20,7 +37,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `httpx.BaseTransport` (used by the test suite; also usable by library consumers who
   need custom networking behavior).
 
-## [0.1.0] - Initial release
+## [0.1.0] - 2026-08-05 - Initial release
 
 ### Added
 

@@ -1,18 +1,18 @@
 """
-myvolkswagen.net klient — priamy HTTP prístup bez Playwright.
+myvolkswagen.net client — direct HTTP access, no Playwright required.
 
-Prihlásenie prebieha cez štandardný OIDC Authorization Code Flow:
-  1. GET /app/authproxy/login → presmerovanie na identity.vwgroup.io
-  2. Odoslanie prihlasovacieho formulára na identity.vwgroup.io
-  3. Presmerovanie späť na portál → nastavenie session cookies
-  4. Volania /app/authproxy/* endpointov s X-Csrf-Token + user-id hlavičkami
+Login runs through the standard OIDC Authorization Code Flow:
+  1. GET /app/authproxy/login → redirects to identity.vwgroup.io
+  2. Submit the login form on identity.vwgroup.io
+  3. Redirect back to the portal → session cookies are set
+  4. Calls to /app/authproxy/* endpoints with X-Csrf-Token + user-id headers
 
-Príklad:
+Example:
     import asyncio
     from myvw import MyVWClient
 
     async def main():
-        async with MyVWClient("email@example.com", "heslo") as c:
+        async with MyVWClient("email@example.com", "password") as c:
             for v in await c.get_vehicles():
                 print(v.vin, v.model_name, v.mileage_km)
 
@@ -30,13 +30,16 @@ from urllib.parse import urljoin
 import httpx
 
 # ---------------------------------------------------------------------------
-# Konštanty
+# Constants
 # ---------------------------------------------------------------------------
 
 _PORTAL = "https://www.myvolkswagen.net"
 _AP = "/app/authproxy"
 
-# URL inicializujúca OAuth2 flow – naviguje na identity.vwgroup.io
+# URL that kicks off the OAuth2 flow — navigates to identity.vwgroup.io.
+# The sk/sk locale segments and sk-SK query/header values below are portal
+# protocol parameters (they select the data locale returned by the API),
+# not user-facing text — changing them changes what the portal sends back.
 _LOGIN_URL = (
     f"{_PORTAL}{_AP}/login"
     "?fag=vw-phs,vwag-weconnect"
@@ -47,7 +50,7 @@ _LOGIN_URL = (
     "&sessionTimeout=1800"
 )
 
-# Hlavičky napodobňujúce bežný prehliadač
+# Headers that mimic a regular browser.
 _BROWSER_HDR: dict[str, str] = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -58,8 +61,9 @@ _BROWSER_HDR: dict[str, str] = {
     "Accept-Encoding": "gzip, deflate, br",
 }
 
-# Hlavičky pre API volania na authproxy
-# user-id '__userId__' je placeholder; authproxy ho zamení za skutočné ID zo session.
+# Headers for authproxy API calls.
+# user-id '__userId__' is a placeholder; authproxy replaces it with the
+# actual ID from the session.
 _API_HDR: dict[str, str] = {
     "Content-Type": "application/json;charset=UTF-8",
     "Accept-Language": "sk-SK",
@@ -78,11 +82,11 @@ _ENDPOINTS: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------------------
-# Parsovanie HTML formulára
+# HTML login-form parsing
 # ---------------------------------------------------------------------------
 
 class _FormParser(HTMLParser):
-    """Extrahuje prvý HTML formulár — action URL a všetky input polia."""
+    """Extracts the first HTML form — its action URL and all input fields."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -104,11 +108,11 @@ class _FormParser(HTMLParser):
 
 
 def _parse_form(html: str, base_url: str = "") -> tuple[str, dict[str, str]]:
-    """Vráti (action_url, {field_name: value}) z prvého formulára v HTML."""
+    """Returns (action_url, {field_name: value}) for the first form in the HTML."""
     p = _FormParser()
     p.feed(html)
     if not p.result:
-        raise LoginError("Prihlasovací formulár sa nenašiel v odpovedi identity servera")
+        raise LoginError("Login form not found in the identity server response")
     action = p.result["action"] or base_url
     if action and not action.startswith("http"):
         action = urljoin(base_url, action)
@@ -116,12 +120,12 @@ def _parse_form(html: str, base_url: str = "") -> tuple[str, dict[str, str]]:
 
 
 # ---------------------------------------------------------------------------
-# Dátové triedy
+# Data classes
 # ---------------------------------------------------------------------------
 
 @dataclass
 class Maintenance:
-    """Servisné intervaly vozidla."""
+    """Vehicle service intervals."""
     inspection_due_days: int | None = None
     inspection_due_km: int | None = None
     oil_due_days: int | None = None
@@ -130,7 +134,7 @@ class Maintenance:
 
 @dataclass
 class Trip:
-    """Zaznamenaná jazda."""
+    """A recorded trip."""
     trip_type: str = ""
     distance_km: int | None = None
     avg_fuel_l100: float | None = None
@@ -141,7 +145,7 @@ class Trip:
 
 @dataclass
 class Vehicle:
-    """Kompletný stav jedného vozidla."""
+    """Complete state of a single vehicle."""
     vin: str
     nickname: str = ""
     license_plate: str = ""
@@ -158,25 +162,26 @@ class Vehicle:
 
 
 # ---------------------------------------------------------------------------
-# Výnimky
+# Exceptions
 # ---------------------------------------------------------------------------
 
 class LoginError(RuntimeError):
-    """Prihlásenie zlyhalo."""
+    """Login failed."""
 
 
 # ---------------------------------------------------------------------------
-# Klient
+# Client
 # ---------------------------------------------------------------------------
 
 class MyVWClient:
     """
-    Async klient pre myvolkswagen.net.
+    Async client for myvolkswagen.net.
 
-    Používa httpx.AsyncClient so zdieľanou cookie jar — session cookies
-    získané počas prihlásenia sa automaticky posielajú pri každom ďalšom requeste.
+    Uses an httpx.AsyncClient with a shared cookie jar — session cookies
+    obtained during login are automatically sent with every subsequent
+    request.
 
-    Podporuje async with aj manuálne volanie start()/close().
+    Supports both `async with` and manual start()/close() calls.
     """
 
     def __init__(
@@ -196,7 +201,7 @@ class MyVWClient:
     # -- Lifecycle -----------------------------------------------------------
 
     async def start(self) -> None:
-        """Vytvorí HTTP session."""
+        """Creates the HTTP session."""
         kwargs: dict[str, Any] = {
             "follow_redirects": True,
             "verify": False,
@@ -210,7 +215,7 @@ class MyVWClient:
         self._http = httpx.AsyncClient(**kwargs)
 
     async def close(self) -> None:
-        """Zatvorí HTTP session."""
+        """Closes the HTTP session."""
         if self._http:
             await self._http.aclose()
             self._http = None
@@ -222,31 +227,31 @@ class MyVWClient:
     async def __aexit__(self, *_: Any) -> None:
         await self.close()
 
-    # -- Prihlásenie ---------------------------------------------------------
+    # -- Login -----------------------------------------------------------------
 
     async def login(self) -> None:
         """
-        Prihlási sa do myvolkswagen.net cez OIDC flow na identity.vwgroup.io.
+        Logs in to myvolkswagen.net via the OIDC flow on identity.vwgroup.io.
 
-        Po úspešnom prihlásení sú SESSION a csrf_token cookies uložené
-        v internej cookie jar a automaticky posielané pri každom ďalšom requeste.
+        On success, SESSION and csrf_token cookies are stored in the internal
+        cookie jar and sent automatically with every subsequent request.
 
-        Vyvolá LoginError ak prihlásenie zlyhá.
+        Raises LoginError if login fails.
         """
         http = self._http
 
-        # Krok 1: GET login URL → sleduj presmerovaniami až na identity.vwgroup.io
+        # Step 1: GET the login URL → follow redirects to identity.vwgroup.io
         r = await http.get(_LOGIN_URL)
         if "identity.vwgroup.io" not in str(r.url):
             raise LoginError(
-                f"Neočakávaná URL po login redirecte: {r.url}"
+                f"Unexpected URL after the login redirect: {r.url}"
             )
 
-        # Krok 2: Parsuj prihlasovací formulár
+        # Step 2: parse the login form
         login_page_url = str(r.url)
         action, fields = _parse_form(r.text, login_page_url)
 
-        # Krok 3: Doplň prihlasovacie údaje a odošli formulár
+        # Step 3: fill in credentials and submit the form
         fields["username"] = self._username
         fields["password"] = self._password
 
@@ -256,36 +261,36 @@ class MyVWClient:
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        # Overenie: sme späť na portáli?
+        # Check: are we back on the portal?
         if _PORTAL not in str(r.url):
             raise LoginError(
-                f"Prihlásenie zlyhalo — finálna URL: {r.url}\n"
-                f"Odpoveď (prvých 300 znakov): {r.text[:300]}"
+                f"Login failed — final URL: {r.url}\n"
+                f"Response (first 300 characters): {r.text[:300]}"
             )
 
-        # Verifikácia session cookie
+        # Verify the session cookie
         if not self._http.cookies.get("SESSION"):
-            raise LoginError("SESSION cookie sa nenastavila — prihlasovacie údaje nesprávne?")
+            raise LoginError("SESSION cookie was not set — wrong credentials?")
 
-    # -- Hlavná metóda -------------------------------------------------------
+    # -- Main method -------------------------------------------------------
 
     async def get_vehicles(self) -> list[Vehicle]:
         """
-        Prihlási sa a vráti zoznam Vehicle objektov so všetkými dostupnými dátami.
+        Logs in and returns a list of Vehicle objects with all available data.
         """
         await self.login()
 
         relations = await self._get_relations()
         return [await self._fetch_vehicle(rel) for rel in relations]
 
-    # -- Pomocné metódy ------------------------------------------------------
+    # -- Helpers ------------------------------------------------------
 
     def _api_headers(self) -> dict[str, str]:
         csrf = self._http.cookies.get("csrf_token", "")
         return {**_API_HDR, "X-Csrf-Token": csrf, "traceId": str(uuid.uuid4())}
 
     async def _api(self, path: str) -> dict | list | None:
-        """GET na authproxy endpoint, vráti JSON alebo None pri chybe."""
+        """GET an authproxy endpoint, returns JSON or None on error."""
         r = await self._http.get(
             f"{_PORTAL}{path}",
             headers=self._api_headers(),
@@ -295,12 +300,12 @@ class MyVWClient:
         return None
 
     async def _get_relations(self) -> list[dict]:
-        """Vráti zoznam vehicle relations (obsahuje VINy, prezývky, EČV)."""
+        """Returns the list of vehicle relations (VINs, nicknames, plates)."""
         data = await self._api(
             f"{_AP}/vw-phs/proxy/v2/users/me/relations?resourceHost=myvw-vum-prod"
         )
         if not data or "relations" not in data:
-            raise RuntimeError("Nepodarilo sa získať zoznam vozidiel z portálu")
+            raise RuntimeError("Failed to fetch the vehicle list from the portal")
         return data["relations"]
 
     async def _fetch_vehicle(self, rel: dict) -> Vehicle:

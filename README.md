@@ -97,6 +97,50 @@ Prints a human-readable summary of every vehicle on the account: odometer, days/
 next inspection and oil service, active warning lights, and the most recent short, long,
 and cyclic trips.
 
+### Example output
+
+Sample run against an account with three vehicles (VINs, plates, nicknames, and mileage
+below are anonymized/fabricated — not a real account; the `warningLights` icon payload,
+a base64 PNG, is truncated with `...` for readability):
+
+```
+# Logging in to myVolkswagen...
+
+Vehicles found: 3
+
+========================================================
+  VIN:              WVWZZZ1KZXX000001
+  Vehicle:          Vehicle One  (XX111AA)  [UNKNOWN]
+  Model:            Volkswagen
+  Warning lights:   none
+========================================================
+  VIN:              WVGZZZ5NZXX000002
+  Vehicle:          Vehicle Two  (XX222BB)  [PRIMARY_USER]
+  Model:            Tiguan Life 2.0 l TDI SCR
+  Engine:           110 kW (150 PS)
+  Odometer:         100 000 km  (as of 2026-01-01 12:00:00)
+  Inspection due:   280 days / 15 000 km
+  Oil service due:  230 days / 13 000 km
+  Warning lights:   {'text': 'Fuel low, please refuel. Range: n/a', 'category': 'ENGINE', 'priority': '117', 'icon': 'data:image/png;base64,...', 'iconName': 'G_2_01_y.png', 'messageId': '0xA222', 'customerRelevance': False, 'iconColor': 'Yellow'}
+  Short trip:       7 km  |  8.2 l/100km  |  17 min  |  ⌀ 26 km/h  (2026-01-01)
+  Long trip:        1800 km  |  6.4 l/100km  |  2900 min  |  ⌀ 38 km/h  (2026-01-01)
+  Cyclic trip:      900 km  |  6.0 l/100km  |  1280 min  |  ⌀ 42 km/h  (2026-01-01)
+========================================================
+  VIN:              WV1ZZZ7HZXX000003
+  Vehicle:          Vehicle Three  (XX333CC)  [GUEST_USER]
+  Model:            Transporter panel van 2.0 l
+  Warning lights:   none
+========================================================
+```
+
+Note: the `text` field inside `warningLights` entries is returned by the portal in
+whatever locale the client requests (currently `sk-SK`); the value above is an English
+translation for readability, not what the live API actually returns.
+
+Vehicles without a recent MBB data sync (e.g. `Vehicle One` and `Vehicle Three` above)
+only show what the `relations` and `details` endpoints return — odometer, maintenance,
+and trip data stay empty until the vehicle reports in.
+
 ## Data model
 
 `client.get_vehicles()` returns a list of `Vehicle` objects (all `myvw.client` dataclasses,
