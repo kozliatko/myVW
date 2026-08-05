@@ -2,6 +2,7 @@
 
 [![Tests](https://github.com/kozliatko/myVW/actions/workflows/tests.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml)
+[![Snyk security](https://snyk.io/test/github/kozliatko/myVW/badge.svg)](https://snyk.io/test/github/kozliatko/myVW)
 [![codecov](https://codecov.io/gh/kozliatko/myVW/branch/main/graph/badge.svg)](https://codecov.io/gh/kozliatko/myVW)
 ![Version](https://img.shields.io/github/v/release/kozliatko/myVW)
 
@@ -237,7 +238,8 @@ HTML login-form parser, and the CLI's formatting and entry-point logic.
 
 Every push and pull request runs the suite on Python 3.11–3.13 via
 [GitHub Actions](.github/workflows/tests.yml), runs [CodeQL](.github/workflows/codeql.yml)
-static analysis, and uploads a coverage report to [Codecov](https://codecov.io/gh/kozliatko/myVW).
+static analysis and a [Snyk](.github/workflows/snyk.yml) dependency vulnerability scan, and
+uploads a coverage report to [Codecov](https://codecov.io/gh/kozliatko/myVW).
 
 ## Caveats
 

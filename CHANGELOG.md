@@ -13,8 +13,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   push/PR to `main` and weekly on a schedule.
 - Coverage reporting: `pytest-cov` dev dependency, `--cov=myvw --cov-report=xml` in CI,
   and a Codecov upload step (`.github/workflows/tests.yml`).
-- README badges: CI test status, CodeQL status, Codecov coverage, and latest GitHub
-  release version.
+- Snyk dependency vulnerability scanning workflow (`.github/workflows/snyk.yml`),
+  running on every push/PR to `main` and weekly on a schedule.
+- README badges: CI test status, CodeQL status, Snyk security, Codecov coverage, and
+  latest GitHub release version.
 
 ## [0.2.2] - 2026-08-05
 
