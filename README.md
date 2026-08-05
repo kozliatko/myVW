@@ -48,6 +48,31 @@ Installing with the `cli` (or `dev`) extra pulls in `python-dotenv` so the CLI c
 pip install -e ".[cli]"
 ```
 
+### Installing without PyPI
+
+This project isn't published on PyPI, so `pip install myvw` doesn't work. `pip` can still
+install it directly, since `pyproject.toml` already declares a proper build backend
+(`setuptools.build_meta`):
+
+```bash
+# latest commit on the default branch
+pip install git+https://github.com/kozliatko/myVW.git
+
+# a specific tagged release (recommended, so upgrades are intentional)
+pip install git+https://github.com/kozliatko/myVW.git@v0.2.2
+
+# with the CLI extra
+pip install "myvw[cli] @ git+https://github.com/kozliatko/myVW.git@v0.2.2"
+```
+
+Or build a wheel locally and install/distribute that file directly:
+
+```bash
+pip install build
+python -m build            # writes dist/myvw-<version>-py3-none-any.whl
+pip install dist/myvw-*.whl
+```
+
 ## Library usage
 
 ```python
