@@ -25,7 +25,7 @@ import uuid
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import httpx
 
@@ -34,6 +34,8 @@ import httpx
 # ---------------------------------------------------------------------------
 
 _PORTAL = "https://www.myvolkswagen.net"
+_PORTAL_HOST = "www.myvolkswagen.net"
+_IDENTITY_HOST = "identity.vwgroup.io"
 _AP = "/app/authproxy"
 
 # URL that kicks off the OAuth2 flow — navigates to identity.vwgroup.io.
@@ -103,8 +105,18 @@ class _FormParser(HTMLParser):
                 self._form["fields"][name] = attrs.get("value", "")
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "form" and self._form and self.result is None:
-            self.result = self._form
+        if tag == "form" and self._form is not None:
+            if self.result is None:
+                self.result = self._form
+            # Stop collecting inputs once the form closes, so fields from a
+            # later, unrelated form (or stray inputs outside any form) don't
+            # leak into the parsed result.
+            self._form = None
+
+
+def _host_of(url: str) -> str:
+    """Returns the lowercased hostname of a URL, or "" if it has none."""
+    return (urlparse(url).hostname or "").lower()
 
 
 def _parse_form(html: str, base_url: str = "") -> tuple[str, dict[str, str]]:
@@ -242,9 +254,12 @@ class MyVWClient:
         """
         http = self._http
 
-        # Step 1: GET the login URL → follow redirects to identity.vwgroup.io
+        # Step 1: GET the login URL → follow redirects to identity.vwgroup.io.
+        # Compare the actual hostname, not a substring of the full URL — a
+        # substring check could be satisfied by e.g. an attacker-controlled
+        # "https://evil.example/?x=identity.vwgroup.io".
         r = await http.get(_LOGIN_URL)
-        if "identity.vwgroup.io" not in str(r.url):
+        if _host_of(str(r.url)) != _IDENTITY_HOST:
             raise LoginError(
                 f"Unexpected URL after the login redirect: {r.url}"
             )
@@ -253,18 +268,25 @@ class MyVWClient:
         login_page_url = str(r.url)
         action, fields = _parse_form(r.text, login_page_url)
 
+        # Refuse to submit credentials anywhere but the identity server,
+        # even if the parsed form's action attribute pointed elsewhere.
+        if _host_of(action) != _IDENTITY_HOST:
+            raise LoginError(
+                f"Refusing to submit credentials to an unexpected host: {action}"
+            )
+
         # Step 3: fill in credentials and submit the form
         fields["username"] = self._username
         fields["password"] = self._password
 
         r = await http.post(
-            action or login_page_url,
+            action,
             data=fields,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
-        # Check: are we back on the portal?
-        if _PORTAL not in str(r.url):
+        # Check: are we back on the portal? (real hostname, not a substring)
+        if _host_of(str(r.url)) != _PORTAL_HOST:
             raise LoginError(
                 f"Login failed — final URL: {r.url}\n"
                 f"Response (first 300 characters): {r.text[:300]}"

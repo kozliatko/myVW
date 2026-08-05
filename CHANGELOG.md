@@ -7,6 +7,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-05
+
+### Security
+
+- **Login redirect/host checks now compare the actual hostname instead of
+  doing substring matching on the full URL.** `login()` previously checked
+  `"identity.vwgroup.io" not in str(r.url)` and `_PORTAL not in str(r.url)`,
+  which a crafted URL such as `https://evil.example/?next=identity.vwgroup.io`
+  would satisfy despite pointing at a completely different host. Both checks
+  now parse the URL and compare `hostname` exactly.
+- **The client now refuses to submit credentials if the parsed login form's
+  `action` points at a host other than `identity.vwgroup.io`**, instead of
+  blindly POSTing to whatever the response contained. Combined with the
+  previous fix, this closes the path where an on-path attacker (particularly
+  relevant before `verify=True` became the default — see 0.2.1) could have
+  redirected the flow to attacker-controlled infrastructure and had the
+  client submit the account's plaintext credentials there.
+- Fixed `_FormParser` collecting `<input>` fields from *anywhere* in the
+  document after the first `<form>` tag, including inside a second, unrelated
+  form or completely outside any form (`self._form` was never reset after the
+  first form closed). Fields are now scoped to the form they actually belong
+  to.
+
 ## [0.2.1] - 2026-08-05
 
 ### Security

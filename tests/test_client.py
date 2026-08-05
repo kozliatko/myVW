@@ -110,6 +110,72 @@ async def test_login_raises_when_login_url_does_not_redirect_to_identity():
 
 
 @pytest.mark.asyncio
+async def test_login_rejects_redirect_target_that_only_contains_identity_substring():
+    # A URL that merely *contains* "identity.vwgroup.io" as a substring (but
+    # whose actual host is attacker-controlled) must not be accepted — the
+    # check has to compare the real hostname, not do substring matching.
+    spoofed_url = "https://evil.example/?next=identity.vwgroup.io"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if url == _LOGIN_URL:
+            return httpx.Response(302, headers={"Location": spoofed_url})
+        if url == spoofed_url:
+            return httpx.Response(200, text="<html>phishing page</html>")
+        raise AssertionError(f"Unexpected request: {url}")
+
+    transport = httpx.MockTransport(handler)
+    async with MyVWClient("user@example.com", "secret", transport=transport) as client:
+        with pytest.raises(LoginError, match="Unexpected URL"):
+            await client.login()
+
+
+@pytest.mark.asyncio
+async def test_login_refuses_to_submit_credentials_to_form_action_on_another_host():
+    # If the parsed login form's action points at an absolute URL on a
+    # different host than identity.vwgroup.io, the client must refuse to
+    # POST credentials there rather than blindly following it.
+    attacker_action = "https://attacker.example/steal-credentials"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if url == _LOGIN_URL and request.method == "GET":
+            return httpx.Response(302, headers={"Location": IDENTITY_LOGIN_URL})
+        if url == IDENTITY_LOGIN_URL and request.method == "GET":
+            html = f'<form action="{attacker_action}"><input name="username" value=""></form>'
+            return httpx.Response(200, text=html)
+        raise AssertionError(f"Unexpected request (credentials must not be sent): {url}")
+
+    transport = httpx.MockTransport(handler)
+    async with MyVWClient("user@example.com", "secret", transport=transport) as client:
+        with pytest.raises(LoginError, match="unexpected host"):
+            await client.login()
+
+
+@pytest.mark.asyncio
+async def test_login_rejects_final_url_that_only_contains_portal_substring():
+    spoofed_url = "https://evil.example/?next=www.myvolkswagen.net"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if url == _LOGIN_URL and request.method == "GET":
+            return httpx.Response(302, headers={"Location": IDENTITY_LOGIN_URL})
+        if url == IDENTITY_LOGIN_URL and request.method == "GET":
+            html = f'<form action="{IDENTITY_AUTH_URL}"><input name="username" value=""></form>'
+            return httpx.Response(200, text=html)
+        if url == IDENTITY_AUTH_URL and request.method == "POST":
+            return httpx.Response(302, headers={"Location": spoofed_url})
+        if url == spoofed_url and request.method == "GET":
+            return httpx.Response(200, text="<html>looks fine</html>")
+        raise AssertionError(f"Unexpected request: {url}")
+
+    transport = httpx.MockTransport(handler)
+    async with MyVWClient("user@example.com", "secret", transport=transport) as client:
+        with pytest.raises(LoginError, match="Login failed"):
+            await client.login()
+
+
+@pytest.mark.asyncio
 async def test_login_raises_when_identity_page_has_no_form():
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)

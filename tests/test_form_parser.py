@@ -47,10 +47,20 @@ def test_parse_form_ignores_inputs_outside_form():
     assert fields == {"inside": "kept"}
 
 
-def test_parse_form_action_comes_from_first_form_only():
-    # Characterization test: the parser locks in the *action* of the first
-    # <form> it sees, but keeps collecting <input> fields for as long as it
-    # is inside any form tag afterwards (it does not scope fields per-form).
+def test_parse_form_ignores_inputs_after_form_closes():
+    html = """
+    <form action="/go"><input name="inside" value="kept"></form>
+    <input name="after" value="ignored">
+    """
+    _, fields = _parse_form(html, base_url="https://identity.vwgroup.io/login")
+
+    assert fields == {"inside": "kept"}
+
+
+def test_parse_form_uses_only_first_forms_action_and_fields():
+    # A second form later in the document must not contribute its action or
+    # its input fields to the result — each form's fields are scoped to that
+    # form, not merged across the whole document.
     html = """
     <form action="/first"><input name="a" value="1"></form>
     <form action="/second"><input name="b" value="2"></form>
@@ -58,7 +68,7 @@ def test_parse_form_action_comes_from_first_form_only():
     action, fields = _parse_form(html, base_url="https://identity.vwgroup.io/login")
 
     assert action == "https://identity.vwgroup.io/first"
-    assert fields == {"a": "1", "b": "2"}
+    assert fields == {"a": "1"}
 
 
 def test_parse_form_input_without_name_is_skipped():

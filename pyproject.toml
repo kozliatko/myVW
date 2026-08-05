@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "myvw"
-version = "0.2.1"
+version = "0.2.2"
 description = "Async Python client for myvolkswagen.net — login and vehicle data extraction without Playwright"
 readme = "README.md"
 requires-python = ">=3.11"
