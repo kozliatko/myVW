@@ -185,10 +185,12 @@ class MyVWClient:
         password: str,
         *,
         proxy: str | None = None,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         self._username = username
         self._password = password
         self._proxy = proxy
+        self._transport = transport
         self._http: httpx.AsyncClient | None = None
 
     # -- Lifecycle -----------------------------------------------------------
@@ -203,6 +205,8 @@ class MyVWClient:
         }
         if self._proxy:
             kwargs["proxy"] = self._proxy
+        if self._transport is not None:
+            kwargs["transport"] = self._transport
         self._http = httpx.AsyncClient(**kwargs)
 
     async def close(self) -> None:
