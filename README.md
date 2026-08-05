@@ -1,5 +1,10 @@
 # myVW
 
+[![Tests](https://github.com/kozliatko/myVW/actions/workflows/tests.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/kozliatko/myVW/branch/main/graph/badge.svg)](https://codecov.io/gh/kozliatko/myVW)
+![Version](https://img.shields.io/github/v/release/kozliatko/myVW)
+
 An async Python client for [myvolkswagen.net](https://www.myvolkswagen.net) — sign in and
 pull vehicle data (odometer, service intervals, trips, warning lights) via direct HTTP
 calls, with no Playwright or other headless browser involved.
@@ -222,11 +227,17 @@ network access and no extra mocking dependency required.
 ```bash
 pip install -e ".[dev]"
 pytest
+# with a coverage report:
+pytest --cov=myvw --cov-report=term-missing
 ```
 
 See [tests/](tests/) for coverage of the login flow (success and every failure branch),
 the `_api`/`_get_relations`/`_fetch_vehicle` helpers, vehicle-fetch orchestration, the
 HTML login-form parser, and the CLI's formatting and entry-point logic.
+
+Every push and pull request runs the suite on Python 3.11–3.13 via
+[GitHub Actions](.github/workflows/tests.yml), runs [CodeQL](.github/workflows/codeql.yml)
+static analysis, and uploads a coverage report to [Codecov](https://codecov.io/gh/kozliatko/myVW).
 
 ## Caveats
 

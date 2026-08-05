@@ -18,6 +18,7 @@ dev = [
     "python-dotenv>=1.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
 ]
 
 [project.scripts]
