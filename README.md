@@ -5,6 +5,10 @@
 [![Snyk security](https://snyk.io/test/github/kozliatko/myVW/badge.svg)](https://snyk.io/test/github/kozliatko/myVW)
 [![codecov](https://codecov.io/gh/kozliatko/myVW/branch/main/graph/badge.svg)](https://codecov.io/gh/kozliatko/myVW)
 ![Version](https://img.shields.io/github/v/release/kozliatko/myVW)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![License](https://img.shields.io/github/license/kozliatko/myVW)
+![Last commit](https://img.shields.io/github/last-commit/kozliatko/myVW)
+![Issues](https://img.shields.io/github/issues/kozliatko/myVW)
 
 An async Python client for [myvolkswagen.net](https://www.myvolkswagen.net) — sign in and
 pull vehicle data (odometer, service intervals, trips, warning lights) via direct HTTP
