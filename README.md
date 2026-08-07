@@ -1,5 +1,6 @@
 # myVW
 
+[![Security](https://github.com/kozliatko/myVW/actions/workflows/security.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/security.yml)
 [![Tests](https://github.com/kozliatko/myVW/actions/workflows/tests.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml)
 [![Snyk security](https://snyk.io/test/github/kozliatko/myVW/badge.svg)](https://snyk.io/test/github/kozliatko/myVW)
