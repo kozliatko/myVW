@@ -3,6 +3,7 @@
 [![Security](https://github.com/kozliatko/myVW/actions/workflows/security.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/security.yml)
 [![Tests](https://github.com/kozliatko/myVW/actions/workflows/tests.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml/badge.svg)](https://github.com/kozliatko/myVW/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kozliatko/myVW/badge)](https://scorecard.dev/viewer/?uri=github.com/kozliatko/myVW)
 [![Snyk security](https://snyk.io/test/github/kozliatko/myVW/badge.svg)](https://snyk.io/test/github/kozliatko/myVW)
 [![codecov](https://codecov.io/gh/kozliatko/myVW/branch/main/graph/badge.svg)](https://codecov.io/gh/kozliatko/myVW)
 ![Version](https://img.shields.io/github/v/release/kozliatko/myVW)
